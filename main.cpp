@@ -3,7 +3,7 @@
 #endif
 
 #include <windows.h>
-#include "MyWndClass.h"
+#include "MyWndClass.hpp"
 
 #define RUNTIME_STATUS_FIRST 1
 #define RUNTIME_STATUS_FINAL 2
