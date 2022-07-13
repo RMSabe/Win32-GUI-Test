@@ -1,5 +1,5 @@
-#ifndef MY_WNDCLASS_H
-#define MY_WNDCLASS_H
+#ifndef MY_WNDCLASS_HPP
+#define MY_WNDCLASS_HPP
 
 #ifndef UNICODE
 #define UNICODE
