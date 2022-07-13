@@ -1,4 +1,4 @@
-#include "MyWndClass.h"
+#include "MyWndClass.hpp"
 #include <windows.h>
 
 LPCWSTR MY_WNDCLASS::getWndClassName(void)
