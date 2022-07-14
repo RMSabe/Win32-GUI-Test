@@ -3,10 +3,17 @@
 #endif
 
 #include <windows.h>
-#include "MyWndClass.hpp"
 
 #define RUNTIME_STATUS_FIRST 1
 #define RUNTIME_STATUS_FINAL 2
+
+#define __WNDCLASS_NAME "MY_WNDCLASS"
+
+#define __WINDOW_NAME "Win32 GUI Test"
+#define WINDOW_X_POS 50
+#define WINDOW_Y_POS 50
+#define WINDOW_WIDTH 720
+#define WINDOW_HEIGHT 360
 
 #define ELEMENT_BUTTON 0
 #define ELEMENT_TEXT 1
@@ -14,11 +21,12 @@
 #define BUTTON_1 1
 #define BUTTON_2 2
 
+LPCWSTR WNDCLASS_NAME = TEXT(__WNDCLASS_NAME);
+LPCWSTR WINDOW_NAME = TEXT(__WINDOW_NAME);
 HINSTANCE hRuntimeInstance;
-MY_WNDCLASS *appWindow = NULL;
-
 int runtimeStatus = 0;
 
+HWND hWindow;
 HWND hText;
 HWND hButton1;
 HWND hButton2;
@@ -33,7 +41,6 @@ void destroyAllElements(void)
 
 void setElement(int elementType, int elementNumber, LPCWSTR elementText, int xPos, int yPos, int width, int height)
 {
-  HWND parentWindow = appWindow->getWindow();
   DWORD elementStyle = (WS_CHILD | WS_VISIBLE);
   
   switch(elementType)
@@ -42,19 +49,19 @@ void setElement(int elementType, int elementNumber, LPCWSTR elementText, int xPo
       switch(elementNumber)
       {
         case BUTTON_1:
-          hButton1 = CreateWindowEx(0, TEXT("BUTTON"), elementText, elementStyle, xPos, yPos, width, height, parentWindow, (HMENU) BUTTON_1, NULL, NULL);
+          hButton1 = CreateWindow(TEXT("BUTTON"), elementText, elementStyle, xPos, yPos, width, height, hWindow, (HMENU) BUTTON_1, hRuntimeInstance, NULL);
           ShowWindow(hButton1, SW_SHOW);
           break;
           
         case BUTTON_2:
-          hButton2 = CreateWindowEx(0, TEXT("BUTTON"), elementText, elementStyle, xPos, yPos, width, height, parentWindow, (HMENU) BUTTON_2, NULL, NULL);
+          hButton2 = CreateWindow(TEXT("BUTTON"), elementText, elementStyle, xPos, yPos, width, height, hWindow, (HMENU) BUTTON_2, hRuntimeInstance, NULL);
           ShowWindow(hButton2, SW_SHOW);
           break;
       }
       break;
       
     case ELEMENT_TEXT:
-      hText = CreateWindowEx(0, TEXT("STATIC"), elementText, elementStyle, xPos, yPos, width, height, parentWindow, NULL, NULL, NULL);
+      hText = CreateWindow(TEXT("STATIC"), elementText, elementStyle, xPos, yPos, width, height, hWindow, NULL, hRuntimeInstance, NULL);
       ShowWindow(hText, SW_SHOW);
       break;
   }
@@ -85,19 +92,23 @@ void popMessageBox(void)
   return;
 }
 
-void initialize(void)
+void createMainWindow(void)
 {
-  appWindow = new MY_WNDCLASS();
-  runtimeStatus = RUNTIME_STATUS_FIRST;
-  paintFirstScreen();
-  ShowWindow(appWindow->getWindow(), SW_SHOW);
-  return;
-}
-
-void terminate(void)
-{
-  destroyAllElements();
-  appWindow->~MY_WNDCLASS();
+  DWORD windowStyle = (WS_CAPTION | WS_VISIBLE | WS_SYSMENU | WS_OVERLAPPED);
+  RECT rectangle = {
+    .left = WINDOW_X_POS,
+    .top = WINDOW_Y_POS,
+    .right = WINDOW_X_POS + WINDOW_WIDTH,
+    .bottom = WINDOW_Y_POS + WINDOW_HEIGHT
+  };
+  AdjustWindowRect(&rectangle, windowStyle, FALSE);
+  
+  int xPos = rectangle.left;
+  int yPos = rectangle.top;
+  int width = rectangle.right - rectangle.left;
+  int height = rectangle.bottom - rectangle.top;
+  
+  hWindow = CreateWindow(WNDCLASS_NAME, WINDOW_NAME, windowStyle, xPos, yPos, width, height, NULL, NULL, hRuntimeInstance, NULL);
   return;
 }
 
@@ -139,6 +150,44 @@ LRESULT CALLBACK windowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPar
   }
   
   return DefWindowProc(hWnd, msg, wParam, lParam);
+}
+
+void registerWndClass(void)
+{
+  WNDCLASS myWndClass;
+  ZeroMemory(&myWndClass, sizeof(WNDCLASS));
+  myWndClass.hInstance = hRuntimeInstance;
+  myWndClass.lpszClassName = WNDCLASS_NAME;
+  myWndClass.lpfnWndProc = windowProcedure;
+  myWndClass.hIcon = LoadIcon(NULL, IDI_APPLICATION);
+  myWndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
+  myWndClass.hbrBackground = (HBRUSH) GetStockObject(LTGRAY_BRUSH);
+  RegisterClass(&myWndClass);
+  return;
+}
+
+void unregisterWndClass(void)
+{
+  UnregisterClass(WNDCLASS_NAME, hRuntimeInstance);
+  return;
+}
+
+void initialize(void)
+{
+  runtimeStatus = RUNTIME_STATUS_FIRST;
+  registerWndClass();
+  createMainWindow();
+  paintFirstScreen();
+  ShowWindow(hWindow, SW_SHOW);
+  return;
+}
+
+void terminate(void)
+{
+  destroyAllElements();
+  DestroyWindow(hWindow);
+  unregisterWndClass();
+  return;
 }
 
 WINBOOL runtimeContinue(void)
